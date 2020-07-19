@@ -27,11 +27,11 @@ type Album struct {
 	ImagePath string             `json:"ipath" bson:"ipath"`
 }
 
+//CreateAlbum with create an empty album in the database "ImageAlbumStorage"
 func CreateAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var album Album
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		fmt.Println("error while decoding")
 		log.Fatal(err)
 	}
 	fmt.Println(album.Name)
@@ -49,13 +49,16 @@ func CreateAlbum(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Created Album")
 }
 
+//DeleteAlbum will delete the album of the given name.
+//It will first check if the album exists in the "ImageAlbumStorage" database
+//If the album exists then it will delete that album
 func DeleteAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var album Album
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		fmt.Println("error while decoding")
 		log.Fatal(err)
 	}
+
 	fmt.Println(album.Name)
 
 	collections, _ := client.Database("ImageAlbumStorage").ListCollectionNames(context.TODO(), bson.D{})
@@ -64,20 +67,20 @@ func DeleteAlbum(w http.ResponseWriter, r *http.Request) {
 	for _, name := range collections {
 		if album.Name == name {
 			if err := client.Database("ImageAlbumStorage").Collection(name).Drop(context.TODO()); err != nil {
-				log.Fatal("Error while deleting Album")
+				log.Fatal(err)
 			}
-			fmt.Printf("Deleted the album : ", name)
+			fmt.Println("Deleted the album : ", name)
 			return
 		}
 	}
 	fmt.Println("Album does not exists")
 }
 
+//CreateImageInAlbum will store an image in the album.
 func CreateImageInAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var album Album
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		fmt.Println("error while decoding")
 		log.Fatal(err)
 	}
 	fmt.Println(album.Name)
@@ -96,14 +99,13 @@ func CreateImageInAlbum(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//DeleteImageInAlbum will delete the image present in the album.
 func DeleteImageInAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id, _ := primitive.ObjectIDFromHex(params["id"])
-	fmt.Println(id)
 	var album Album
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		fmt.Println("error while decoding")
 		log.Fatal(err)
 	}
 
@@ -115,6 +117,7 @@ func DeleteImageInAlbum(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//ListImagesInAlbum will list all the images present in the album
 func ListImagesInAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var album Album
@@ -137,11 +140,11 @@ func ListImagesInAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//GetImageInAlbum will give the queried image present in the album
 func GetImageInAlbum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var album Album
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		fmt.Println("error while decoding")
 		log.Fatal(err)
 	}
 	params := mux.Vars(r)
@@ -165,7 +168,7 @@ func main() {
 
 	client, _ = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err := client.Ping(ctx, nil); err != nil {
-		log.Fatal("Not able to Connect to mongo db")
+		log.Fatal(err)
 	}
 
 	router := mux.NewRouter()
@@ -177,6 +180,6 @@ func main() {
 	router.HandleFunc("/album/image/{id}", GetImageInAlbum).Methods("GET")
 
 	if err := http.ListenAndServe(":8080", router); err != nil {
-		log.Fatal("Fail to Listenandserver")
+		log.Fatal(err)
 	}
 }
